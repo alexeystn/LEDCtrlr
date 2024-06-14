@@ -36,7 +36,7 @@
 #define DEF_COLOR_ORDER "GRB"    // default color order for LED strip
 #define DEF_BRIGHTNESS  20       // default brightness value
 #define STRIP_LED_TYPE WS2811    // specifies the type of LED strip
-#define MAX_NUM_LEDS 300         // maximum number of LEDs supported on strip
+#define MAX_NUM_LEDS 320         // maximum number of LEDs supported on strip
 
 #define MODULE_LED_PIN LED_BUILTIN  // status LED on Arduino module
 #define MODULE_LED_ONSTATE HIGH
@@ -73,6 +73,9 @@ void writeCharToSerial(char ch);
 void copySerialMsgBuffer();
 void setModuleLed(bool onFlag);
 
+bool rtcModeEnabled = false;
+extern bool setupRTC();
+extern void loopRTC();
 
 void setup()
 {
@@ -89,10 +92,19 @@ void setup()
 
     delay(500);
     setModuleLed(false);
+
+    if (setupRTC()) {
+      rtcModeEnabled = true;
+    }
 }
 
 void loop()
 {
+    if (rtcModeEnabled) {
+      loopRTC();
+      return;
+    }
+  
     static int cmdRecvDivVal = -1;
 
     uint32_t curTimeMs = millis();
