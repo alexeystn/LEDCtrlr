@@ -7,10 +7,10 @@
 #define COLOR_ORDER       "GRB"
 #define NUM_LEDS          8*40
 
-#define KEY_MENU_PIN      48
-#define KEY_MINUS_PIN     50
-#define KEY_PLUS_PIN      52
-#define MODE_PIN          2
+#define KEY_MENU_PIN      24
+#define KEY_MINUS_PIN     27
+#define KEY_PLUS_PIN      26
+#define MODE_PIN          A0
 
 enum key_t {
   KEY_MENU = 0,
