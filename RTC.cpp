@@ -53,6 +53,7 @@ uint8_t brightnessLevels[] = {1, 2, 4, 8, 16, 32};
 uint8_t configLevel = 0;
 uint8_t configColor = 0;
 uint8_t configRotated = 0;
+uint8_t configMode = 0;
 
 uint32_t lastRefreshTime = 0;
 uint32_t lastKeyPressedMs[3];
@@ -96,20 +97,35 @@ void configLoad(void) {
   }
   if (configLevel >= NUM_LEVELS) {
     configLevel = 0;
-  }  
+  }
+  b = EEPROM.read(EEPROM_ADDRESS + 1);
+  configMode = b & 0x01;
 }
 
 void configSave(void) {
   uint8_t b = 0;
   b = (configColor << 4) + (configLevel << 1) + configRotated;
   EEPROM.write(EEPROM_ADDRESS, b);
+  b = configMode & 0x01;
+  EEPROM.write(EEPROM_ADDRESS + 1, b);
 }
 
 bool setupRTC() {
-  pinMode(MODE_PIN, INPUT_PULLUP);  
+  for (uint8_t i = 0; i < 3; i++) {
+    pinMode(keyPin[i], INPUT);
+    digitalWrite(keyPin[i], HIGH);
+    keyPreviousState[i] = 1;
+  }
   configLoad();
   delay(100);
-  if (digitalRead(MODE_PIN) == 0) {
+  for (uint8_t i = 0; i < 3; i++) {
+    if (digitalRead(keyPin[i]) == 0) {
+      configMode ^= 1;
+      configSave();
+      break;
+    }
+  }
+  if (configMode == 0) {
     return false;
   }
   if (!rtc.begin()) {
@@ -125,14 +141,8 @@ bool setupRTC() {
   FastLED.addLeds<WS2811, LED_STRIP_PIN, GRB>(crgbLedsArr, NUM_LEDS);
   FastLED.setBrightness(brightnessLevels[configLevel]);
   FastLED.showColor(CRGB::Black);
-  for (uint8_t i = 0; i < 3; i++) {
-    pinMode(keyPin[i], INPUT);
-    digitalWrite(keyPin[i], HIGH);
-    keyPreviousState[i] = 1;
-  }
   return true;
 }
-
 
 void putDigit(uint8_t digit, uint8_t pos, uint8_t highlighted) {
   uint16_t n;
@@ -140,7 +150,6 @@ void putDigit(uint8_t digit, uint8_t pos, uint8_t highlighted) {
   if (highlighted) {
     color = (color + NUM_COLORS / 2) % NUM_COLORS;
   }
-  
   for (int x = 0; x < 5; x++) {
     uint8_t b = font[digit][x];
     for (int y = 0; y < 8; y++) {
